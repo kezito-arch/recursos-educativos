@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Recursos Educativos</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .contenedor {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 90%;
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      background: blue;
+      color: white;
+      padding: 10px;
+      border: none;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    ul {
+      margin-top: 15px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<div class="contenedor">
+  <h2>📘 Recursos Educativos</h2>
+
+  <input type="text" id="titulo" placeholder="Nombre del recurso">
+  <input type="text" id="link" placeholder="Enlace del recurso">
+
+  <button onclick="agregar()">PUBLICAR</button>
+<input type="text" id="buscador" placeholder="Buscar recurso..." onkeyup="filtrar()">
+  <ul id="lista"></ul>
+</div>
+
+<script>
+    
+let recursos = JSON.parse(localStorage.getItem("recursos")) || [];
+
+function mostrar() {
+  let lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  recursos.forEach(function(item, index) {
+    let li = document.createElement("li");
+
+    let partes = item.split(" - ");
+
+    let enlace = document.createElement("a");
+    enlace.textContent = partes[0];
+    enlace.href = partes[1];
+    enlace.target = "_blank";
+
+    li.appendChild(enlace);
+
+    let boton = document.createElement("button");
+    boton.textContent = "Eliminar";
+    boton.style.marginLeft = "10px";
+
+    boton.onclick = function() {
+      recursos.splice(index, 1);
+      localStorage.setItem("recursos", JSON.stringify(recursos));
+      mostrar();
+    };
+
+    li.appendChild(boton);
+
+    lista.appendChild(li);
+  });
+}
+
+function agregar() {
+  let titulo = document.getElementById("titulo").value;
+  let link = document.getElementById("link").value;
+
+  if (titulo === "" || link === "") {
+    alert("Completa los campos");
+    return;
+  }
+
+  let nuevo = titulo + " - " + link;
+
+  recursos.push(nuevo);
+
+  localStorage.setItem("recursos", JSON.stringify(recursos));
+
+  mostrar();
+
+  document.getElementById("titulo").value = "";
+  document.getElementById("link").value = "";
+}
+
+function filtrar() {
+  let texto = document.getElementById("buscador").value.toLowerCase();
+
+  let lista = document.getElementById("lista");
+  let items = lista.getElementsByTagName("li");
+
+  for (let i = 0; i < items.length; i++) {
+    let contenido = items[i].textContent.toLowerCase();
+
+    if (contenido.indexOf(texto) > -1) {
+      items[i].style.display = "";
+    } else {
+      items[i].style.display = "none";
+    }
+  }
+}
+
+mostrar();
+</script>
+
+</body>
+</html>
