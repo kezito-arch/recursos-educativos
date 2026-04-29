@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
   <meta charset="UTF-8">
   <title>Recursos Educativos</title>
   <p>Publica y comparte recursos educativos fácilmente 📚</p>
-  <style>
+ <style>
+  
 body {
   font-family: Arial;
   background: #0f172a;
@@ -12,14 +14,22 @@ body {
   text-align: center;
 }
 
-input, button {
+h1 {
+  margin-top: 20px;
+}
+
+input {
   padding: 10px;
   margin: 5px;
   border-radius: 8px;
   border: none;
+  width: 200px;
 }
 
 button {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: none;
   background: #22c55e;
   color: white;
   cursor: pointer;
@@ -29,8 +39,30 @@ button:hover {
   background: #16a34a;
 }
 
+#lista {
+  list-style: none;
+  padding: 0;
+}
+
 li {
-  margin: 10px;
+  background: #1e293b;
+  margin: 15px auto;
+  padding: 15px;
+  border-radius: 15px;
+  width: 300px;
+  box-shadow: 0px 5px 15px rgba(0,0,0,0.5);
+}
+
+img, iframe {
+  margin-top: 10px;
+  border-radius: 10px;
+}
+li:hover {
+  transform: scale(1.05);
+  transition: 0.3s;
+}
+li {
+  transition: 0.3s;
 }
 </style>
 </head>
@@ -43,67 +75,127 @@ li {
   <input type="text" id="link" placeholder="Enlace del recurso">
 
   <button onclick="agregar()">PUBLICAR</button>
-<input type="text" id="buscador" placeholder="Buscar recurso..." onkeyup="filtrar()">
+<input type="text" id="buscador" onkeyup="filtrar()" placeholder="Buscar...">
   <ul id="lista"></ul>
 </div>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
-    
+
+const firebaseConfig = {
+  apiKey: "AIzaSyApuY60IBtV42qD0ykfDHGumXPI3dzRcnk",
+  authDomain: "recursos-educativos-3659a.firebaseapp.com",
+  projectId: "recursos-educativos-3659a",
+  storageBucket: "recursos-educativos-3659a.firebasestorage.app",
+  messagingSenderId: "156916187621",
+  appId: "1:156916187621:web:c7c2ac844bb8723ee0ef0c"
+};
+
+// INICIALIZAR
+firebase.initializeApp(firebaseConfig);
+
+// BASE DE DATOS
+const db = firebase.firestore();    
 let recursos = JSON.parse(localStorage.getItem("recursos")) || [];
 
 function mostrar() {
   let lista = document.getElementById("lista");
   lista.innerHTML = "";
 
-  recursos.forEach(function(item, index) {
-    let li = document.createElement("li");
+  db.collection("recursos").get().then((datos) => {
+    datos.forEach((doc) => {
+      let data = doc.data();
 
-    let partes = item.split(" - ");
+      let li = document.createElement("li");
 
-    let enlace = document.createElement("a");
-    enlace.textContent = partes[0];
-    enlace.href = partes[1];
-    enlace.target = "_blank";
+      let titulo = document.createElement("h3");
+      titulo.textContent = data.titulo;
+      li.appendChild(titulo);
 
-    li.appendChild(enlace);
+// 🎥 VIDEO
+if (data.link.includes("youtube.com") || data.link.includes("youtu.be")) {
 
-    let boton = document.createElement("button");
-    boton.textContent = "Eliminar";
-    boton.style.marginLeft = "10px";
+  let iframe = document.createElement("iframe");
 
-    boton.onclick = function() {
-      recursos.splice(index, 1);
-      localStorage.setItem("recursos", JSON.stringify(recursos));
-      mostrar();
-    };
+  let videoId = "";
 
-    li.appendChild(boton);
+  // Obtener ID del video
+  if (data.link.includes("watch?v=")) {
+    videoId = data.link.split("watch?v=")[1].split("&")[0];
+  } else if (data.link.includes("youtu.be/")) {
+    videoId = data.link.split("youtu.be/")[1].split("?")[0];
+  }
 
-    lista.appendChild(li);
-  });
+  // 🖼️ Miniatura
+  let img = document.createElement("img");
+  img.src = "https://img.youtube.com/vi/" + videoId + "/0.jpg";
+  img.width = 300;
+  img.style.borderRadius = "10px";
+  img.style.cursor = "pointer";
+
+  // ▶ Botón
+  let botonVideo = document.createElement("button");
+  botonVideo.textContent = "▶ Ver video";
+  botonVideo.style.display = "block";
+  botonVideo.style.margin = "10px auto";
+
+  // 🔗 Abrir video
+  function abrirVideo() {
+    window.open(data.link, "_blank");
+  }
+
+  img.onclick = abrirVideo;
+  botonVideo.onclick = abrirVideo;
+
+  li.appendChild(img);
+  li.appendChild(botonVideo);
+
+// 🖼️ IMAGEN
+} else if (data.link.includes(".jpg") || data.link.includes(".png")) {
+  let img = document.createElement("img");
+  img.src = data.link;
+  img.width = 200;
+
+  li.appendChild(img);
+
+// 🔗 LINK
+} else {
+  let enlace = document.createElement("a");
+  enlace.textContent = "Abrir recurso";
+  enlace.href = data.link;
+  enlace.target = "_blank";
+
+  li.appendChild(enlace);
 }
+      // 🔴 BOTÓN ELIMINAR
+      let boton = document.createElement("button");
+      boton.textContent = "Eliminar";
+      boton.style.marginLeft = "10px";
+
+      boton.onclick = function() {
+        db.collection("recursos").doc(doc.id).delete();
+        mostrar();
+      };
+
+      li.appendChild(boton);
+
+      lista.appendChild(li);
+    });
+ });
+ }
 
 function agregar() {
   let titulo = document.getElementById("titulo").value;
   let link = document.getElementById("link").value;
 
-  if (titulo === "" || link === "") {
-    alert("Completa los campos");
-    return;
-  }
-
-  let nuevo = titulo + " - " + link;
-
-  recursos.push(nuevo);
-
-  localStorage.setItem("recursos", JSON.stringify(recursos));
-
+  db.collection("recursos").add({
+    titulo: titulo,
+    link: link
+  }).then(() => {
   mostrar();
-
-  document.getElementById("titulo").value = "";
-  document.getElementById("link").value = "";
-}
-
+   });
+   }
 function filtrar() {
   let texto = document.getElementById("buscador").value.toLowerCase();
 
@@ -111,16 +203,21 @@ function filtrar() {
   let items = lista.getElementsByTagName("li");
 
   for (let i = 0; i < items.length; i++) {
-    let contenido = items[i].textContent.toLowerCase();
 
-    if (contenido.indexOf(texto) > -1) {
-      items[i].style.display = "";
+    let titulo = items[i].getElementsByTagName("h3")[0];
+
+    let contenido = "";
+    if (titulo) {
+      contenido = titulo.textContent.toLowerCase();
+    }
+
+    if (contenido.includes(texto)) {
+      items[i].style.display = "block";
     } else {
       items[i].style.display = "none";
     }
   }
 }
-
 mostrar();
 </script>
 
